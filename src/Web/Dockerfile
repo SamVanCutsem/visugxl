@@ -1,4 +1,5 @@
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS base
+USER $APP_UID
 EXPOSE 80
 EXPOSE 443
 ENV ASPNETCORE_URLS=http://+:80/;http://+:443/
