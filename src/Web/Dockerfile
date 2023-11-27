@@ -1,4 +1,9 @@
-FROM mcr.microsoft.com/dotnet/sdk
+FROM mcr.microsoft.com/dotnet/aspnet AS base
+EXPOSE 80
+WORKDIR /app
+ENV ASPNETCORE_URLS=http://+:80/
+
+FROM mcr.microsoft.com/dotnet/sdk AS build
 WORKDIR /src
 
 COPY ["Nuget.Config", "."]
@@ -14,12 +19,13 @@ COPY tests/Domain.UnitTests/Domain.UnitTests.csproj ./tests/Domain.UnitTests/
 
 RUN dotnet restore 
 
+# Copy all the source code files now
 COPY . .
 RUN dotnet build -c Release --no-restore
 RUN dotnet test -c Release --no-build
 RUN dotnet publish src/Web/Web.csproj -c Release --no-build -o /publish
  
+FROM base AS final
 WORKDIR /publish
-ENV ASPNETCORE_URLS=http://+:80/
-EXPOSE 80
+COPY --from=build /publish .
 ENTRYPOINT ["dotnet", "MyAwesomeDotnetDockerApp.Web.dll"]
