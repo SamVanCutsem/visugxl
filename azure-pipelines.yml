@@ -1,0 +1,100 @@
+# Docker
+# Build and push an image to Azure Container Registry
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger:
+- master
+
+resources:
+- repo: self
+
+variables:
+  imageRepository: 'visugxl'
+  containerRegistry: 'acrvisugxlsam.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/src/Web/Dockerfile'
+  tag: '$(Build.BuildId)'
+  vmImageName: 'ubuntu-latest'
+
+stages:
+- stage: Build
+  displayName: Build and push stage
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+
+    - task: Docker@2
+      displayName: "Restore solution"
+      inputs:
+        containerRegistry: 'acrvisugxlsam'
+        repository: '$(imageRepository)'
+        command: 'build'
+        Dockerfile: '$(dockerfilePath)'
+        buildContext: '$(Build.SourcesDirectory)'
+        tags: |
+          $(tag)-restore
+          latest-restore
+        arguments: '--target restore'
+
+    - task: Docker@2
+      displayName: "Build solution"
+      inputs:
+        containerRegistry: 'acrvisugxlsam'
+        repository: '$(imageRepository)'
+        command: 'build'
+        Dockerfile: '$(dockerfilePath)'
+        buildContext: '$(Build.SourcesDirectory)'
+        tags: |
+          $(tag)-build
+          latest-build
+        arguments: '--target build'
+
+    - task: Docker@2
+      displayName: "Tests"
+      inputs:
+        containerRegistry: 'acrvisugxlsam'
+        repository: '$(imageRepository)'
+        command: 'build'
+        Dockerfile: '$(dockerfilePath)'
+        buildContext: '$(Build.SourcesDirectory)'
+        tags: |
+          $(tag)-test
+          latest-test
+        arguments: '--target test'
+    - task: Docker@2
+      displayName: "Publish"
+      inputs:
+        containerRegistry: 'acrvisugxlsam'
+        repository: '$(imageRepository)'
+        command: 'build'
+        Dockerfile: '$(dockerfilePath)'
+        buildContext: '$(Build.SourcesDirectory)'
+        tags: |
+          $(tag)-publish
+          latest-publish
+        arguments: '--target publish'
+
+    - task: Docker@2
+      displayName: "Create Image"
+      inputs:
+        containerRegistry: 'acrvisugxlsam'
+        repository: '$(imageRepository)'
+        command: 'build'
+        Dockerfile: '$(dockerfilePath)'
+        buildContext: '$(Build.SourcesDirectory)'
+        tags: |
+          $(tag)
+          latest
+        arguments: '--target final'
+
+    - task: Docker@2
+      displayName: "Push image"
+      inputs:
+        command: push
+        containerRegistry: 'acrvisugxlsam'
+        repository: $(imageRepository)
+        tags: |
+          $(tag)
+          latest

@@ -5,7 +5,7 @@ EXPOSE 443
 ENV ASPNETCORE_URLS=http://+:80/;http://+:443/
 WORKDIR /app
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS restore
 WORKDIR /src
 
 COPY ["Nuget.Config", "."]
@@ -21,13 +21,18 @@ COPY tests/Domain.UnitTests/Domain.UnitTests.csproj ./tests/Domain.UnitTests/
 
 RUN dotnet restore 
 
+FROM restore AS build
 # Copy all the source code files now
 COPY . .
 RUN dotnet build -c Release --no-restore
+
+FROM build AS test
 RUN dotnet test -c Release --no-build
+
+FROM build AS publish
 RUN dotnet publish src/Web/Web.csproj -c Release --no-build -o /publish
  
 FROM base AS final
 WORKDIR /publish
-COPY --from=build /publish .
+COPY --from=publish /publish .
 ENTRYPOINT ["dotnet", "MyAwesomeDotnetDockerApp.Web.dll"]
